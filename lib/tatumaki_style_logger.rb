@@ -1,3 +1,5 @@
+require_relative 'tatumaki_style_logger/version'
+
 require 'active_support'
 require 'active_support/logger'
 require 'active_support/tagged_logging'
