@@ -2,10 +2,12 @@
 # frozen_string_literal: true
 
 require "bundler/setup"
-require "tatumaki/style/logger"
+require "tatumaki_style_logger"
 
 # You can add fixtures and/or initialization code here to make experimenting
 # with your gem easier. You can also use a different console, if you like.
+
+$l = TatumakiStyleLogger.new
 
 require "irb"
 IRB.start(__FILE__)

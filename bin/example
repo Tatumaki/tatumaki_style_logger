@@ -1,0 +1,34 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "bundler/setup"
+require "tatumaki_style_logger"
+
+require 'pry'
+
+# You can add fixtures and/or initialization code here to make experimenting
+# with your gem easier. You can also use a different console, if you like.
+
+$l = TatumakiStyleLogger.new
+
+$l.debug "This is debug level message."
+$l.info "This is info level message."
+$l.warn "This is warn level message."
+$l.error "This is error level message."
+$l.fatal "This is fatal level message."
+
+$l.tagged(:tag1) do
+  $l.debug "This is debug level message."
+  $l.info "This is info level message."
+  $l.warn "This is warn level message."
+  $l.error "This is error level message."
+  $l.fatal "This is fatal level message."
+
+  $l.tagged(:tag2) do
+    $l.debug "This is debug level message."
+    $l.info "This is info level message."
+    $l.warn "This is warn level message."
+    $l.error "This is error level message."
+    $l.fatal "This is fatal level message."
+  end
+end
