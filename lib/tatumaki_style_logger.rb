@@ -88,4 +88,3 @@ class TatumakiStyleLogger
 end
 
 TSLogger = TatumakiStyleLogger
-TSLogger.new
