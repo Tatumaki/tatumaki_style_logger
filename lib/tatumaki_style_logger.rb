@@ -8,11 +8,15 @@ require 'active_support/core_ext/time'
 class TatumakiStyleLogger
   class PlainFormatter
     TAG_WRAPPER = proc { |name| "[#{name}]" }.freeze
+    ANSI_PATTERN = /\e\[\d{1,3}[mK]/
 
-    attr_reader :wrap
+    attr_reader :wrap, :human_friendry
 
-    def initialize wrap: 80
+    alias hf human_friendry
+
+    def initialize wrap: 80, human_friendry: true
       @wrap = wrap
+      @human_friendry = human_friendry
     end
 
     def call(severity, time, progname, msg)
@@ -20,9 +24,11 @@ class TatumakiStyleLogger
       prefix = "#{time.iso8601} #{rich_severity severity} #{rich_tags current_tags}"
       text   = "#{rich_message severity, plain}"
 
-
       if wrap and prefix.length > wrap
         "#{prefix}\n  ↳ #{text}\n"
+      elsif hf
+        padding = ' ' * (prefix.gsub ANSI_PATTERN, '').length
+        "#{prefix}#{text.gsub("\n", "\n" + padding)}\n"
       else
         "#{prefix}#{text}\n"
       end
@@ -78,9 +84,9 @@ class TatumakiStyleLogger
 
   delegate_missing_to :@logger
 
-  def initialize io=STDOUT, level: :debug, multicast: [], wrap: false, format: :plain
+  def initialize io=STDOUT, level: :debug, multicast: [], wrap: false, format: :plain, human_friendry: true
     logger = ActiveSupport::Logger.new(io)
-    logger.formatter = PlainFormatter.new(wrap: wrap)
+    logger.formatter = PlainFormatter.new(wrap: wrap, human_friendry: human_friendry)
 
     @logger = ActiveSupport::TaggedLogging.new(logger)
     @logger.level = level

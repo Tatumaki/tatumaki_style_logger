@@ -32,3 +32,6 @@ $l.tagged(:tag1) do
     $l.fatal "This is fatal level message."
   end
 end
+
+
+$l.info "Padding:\nWill be aligned to after the prefix."
