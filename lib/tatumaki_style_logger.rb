@@ -19,15 +19,67 @@ class TatumakiStyleLogger
       @human_friendry = human_friendry
     end
 
+    def bleach str
+      str.gsub ANSI_PATTERN, ''
+    end
+
+    # 画面消去・スクロール・改行系はサポート外
+    # \r, \e[5D (move left), \e[5C (move right) などを含めた文字列の幅
+    def ansi_width str
+      i = 0
+      count = 0
+      while i < str.length
+        c = str[i]
+        if c == "\e" and str[i+1] == '[' and str[i..(i+6)] =~ /\e\[(\d+)([CD])/
+          w = $1.length + 1 + 1
+          n = $1.to_i
+          d = $2
+          case d
+          when 'D'
+            count = [0, count - n].max
+          when 'C'
+            count = count + n
+          end
+          i += w
+        elsif c == "\e" and str[i+1] == '['
+          skip = 6.times do |j|
+            k = str[i + j + 1]
+            if k == 'm' or k == 'K'
+              break j + 1
+            end
+          end
+          i += skip
+        elsif c == "\r"
+          count = 0
+        elsif c == "\n"
+          # do nothing
+        else
+          count += 1
+        end
+        i += 1
+      end
+
+      return count
+    end
+
     def call(severity, time, progname, msg)
       plain  = remove_tags msg, current_tags
-      prefix = "#{time.iso8601} #{rich_severity severity} #{rich_tags current_tags}"
+      iso_time = time.iso8601
+      d = iso_time[0..10]   # 2000-01-01T
+      t = iso_time[11..] # 00:00:00+09:00
+
+      datetime = if hf
+        "#{d}\e[11D#{t}\e[6D      \e[6D "
+      else
+        "#{d}#{t} "
+      end
+      prefix = "#{datetime}#{rich_severity severity} #{rich_tags current_tags}"
       text   = "#{rich_message severity, plain}"
 
       if wrap and prefix.length > wrap
         "#{prefix}\n  ↳ #{text}\n"
       elsif hf
-        padding = ' ' * (prefix.gsub ANSI_PATTERN, '').length
+        padding = ' ' * ansi_width(prefix)
         "#{prefix}#{text.gsub("\n", "\n" + padding)}\n"
       else
         "#{prefix}#{text}\n"
