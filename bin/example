@@ -33,5 +33,8 @@ $l.tagged(:tag1) do
   end
 end
 
-
 $l.info "Padding:\nWill be aligned to after the prefix."
+
+$l = TatumakiStyleLogger.new(no_timestamp: true)
+$l.debug "No timestamp line.1"
+$l.info  "No timestamp line.2"

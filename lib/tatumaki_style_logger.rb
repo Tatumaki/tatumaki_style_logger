@@ -10,13 +10,14 @@ class TatumakiStyleLogger
     TAG_WRAPPER = proc { |name| "[#{name}]" }.freeze
     ANSI_PATTERN = /\e\[\d{1,3}[mK]/
 
-    attr_reader :wrap, :human_friendry
+    attr_reader :wrap, :human_friendry, :no_timestamp
 
     alias hf human_friendry
 
-    def initialize wrap: 80, human_friendry: true
-      @wrap = wrap
+    def initialize wrap: 80, human_friendry: true, no_timestamp: false
+      @wrap           = wrap
       @human_friendry = human_friendry
+      @no_timestamp   = no_timestamp
     end
 
     def bleach str
@@ -68,7 +69,9 @@ class TatumakiStyleLogger
       d = iso_time[0..10]   # 2000-01-01T
       t = iso_time[11..] # 00:00:00+09:00
 
-      datetime = if hf
+      datetime = if no_timestamp
+        ""
+      elsif hf
         "#{d}\e[11D#{t}\e[6D      \e[6D "
       else
         "#{d}#{t} "
@@ -136,9 +139,13 @@ class TatumakiStyleLogger
 
   delegate_missing_to :@logger
 
-  def initialize io=STDOUT, level: :debug, multicast: [], wrap: false, format: :plain, human_friendry: true
+  def initialize io=STDOUT, level: :debug, multicast: [], wrap: false, format: :plain, human_friendry: true, no_timestamp: false
     logger = ActiveSupport::Logger.new(io)
-    logger.formatter = PlainFormatter.new(wrap: wrap, human_friendry: human_friendry)
+    logger.formatter = PlainFormatter.new(
+      wrap:           wrap,
+      human_friendry: human_friendry,
+      no_timestamp:   no_timestamp
+    )
 
     @logger = ActiveSupport::TaggedLogging.new(logger)
     @logger.level = level
