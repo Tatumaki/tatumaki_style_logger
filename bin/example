@@ -37,4 +37,13 @@ $l.info "Padding:\nWill be aligned to after the prefix."
 
 $l = TatumakiStyleLogger.new(no_timestamp: true)
 $l.debug "No timestamp line.1"
-$l.info  "No timestamp line.2"
+$l.info "No timestamp line.1"
+$l.warn "No timestamp line.1"
+$l.error "No timestamp line.1"
+
+$l = TatumakiStyleLogger.new(human_friendly: true)
+$l.debug (["human_friendly line."] * 3).join("\n")
+
+$l = TatumakiStyleLogger.new(human_friendly: false)
+$l.debug (["human_friendly line."] * 3).join("\n")
+

@@ -6,18 +6,41 @@ require 'active_support/tagged_logging'
 require 'active_support/core_ext/time'
 
 class TatumakiStyleLogger
+  class Ascii
+    def self.left n
+      "\e[#{n}D"
+    end
+
+    def self.right n
+      "\e[#{n}C"
+    end
+  end
+
   class PlainFormatter
     TAG_WRAPPER = proc { |name| "[#{name}]" }.freeze
     ANSI_PATTERN = /\e\[\d{1,3}[mK]/
 
-    attr_reader :wrap, :human_friendry, :no_timestamp
+    # options
+    attr_reader :wrap, :human_friendly, :no_timestamp, :include_date
 
-    alias hf human_friendry
+    DEFAULT_OPTIONS = {
+      wrap: 80,
+      human_friendly: true,
+      no_timestamp: false,
+      include_date: true,
+    }
 
-    def initialize wrap: 80, human_friendry: true, no_timestamp: false
+    def initialize **options
+      {**DEFAULT_OPTIONS, **extract_options(options)} => {wrap:, human_friendly:, no_timestamp:, include_date:}
+
       @wrap           = wrap
-      @human_friendry = human_friendry
+      @human_friendly = human_friendly
       @no_timestamp   = no_timestamp
+      @include_date   = include_date
+    end
+
+    def extract_options options
+      options.slice(:wrap, :human_friendly, :no_timestamp, :include_date)
     end
 
     def bleach str
@@ -71,9 +94,15 @@ class TatumakiStyleLogger
 
       datetime = if no_timestamp
         ""
-      elsif hf
-        "#{d}\e[11D#{t}\e[6D      \e[6D "
+      elsif human_friendly
+        # 読みやすい時刻
+        if include_date
+          "#{d}#{Ascii.left 1} #{t}#{Ascii.left 6}      #{Ascii.left 6} "
+        else
+          "#{d}#{Ascii.left 11}#{t}#{Ascii.left 6}      #{Ascii.left 6} "
+        end
       else
+        # ISO8601フォーマットのまま
         "#{d}#{t} "
       end
       prefix = "#{datetime}#{rich_severity severity} #{rich_tags current_tags}"
@@ -81,10 +110,12 @@ class TatumakiStyleLogger
 
       if wrap and prefix.length > wrap
         "#{prefix}\n  ↳ #{text}\n"
-      elsif hf
+      elsif human_friendly
+        # 折り返しにパディングを入れて読みやすく
         padding = ' ' * ansi_width(prefix)
         "#{prefix}#{text.gsub("\n", "\n" + padding)}\n"
       else
+        # 折り返しされたテキストは左端から始まる
         "#{prefix}#{text}\n"
       end
     end
@@ -139,17 +170,23 @@ class TatumakiStyleLogger
 
   delegate_missing_to :@logger
 
-  def initialize io=STDOUT, level: :debug, multicast: [], wrap: false, format: :plain, human_friendry: true, no_timestamp: false
+  DEFAULT_OPTIONS = {
+    level: :debug,
+    multicast: [],
+    wrap: false,
+    format: :plain,
+    human_friendly: true,
+    include_date: true,
+    no_timestamp: false,
+  }
+
+  def initialize io=STDOUT, **options
+    options = {**DEFAULT_OPTIONS, **options}
+
     logger = ActiveSupport::Logger.new(io)
-    logger.formatter = PlainFormatter.new(
-      wrap:           wrap,
-      human_friendry: human_friendry,
-      no_timestamp:   no_timestamp
-    )
+    logger.formatter = PlainFormatter.new(**options)
 
     @logger = ActiveSupport::TaggedLogging.new(logger)
     @logger.level = level
   end
 end
-
-TSLogger = TatumakiStyleLogger
